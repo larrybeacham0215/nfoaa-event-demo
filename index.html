@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Buy the Book | Never Fight or Argue Again</title><link rel="stylesheet" href="style.css"></head><body>
+<div class="test">TEST MODE - no real charge</div>
+<div class="wrap">
+<img class="cover" src="https://neverfightorargue.com/assets/book-3d.png" alt="Never Fight or Argue Again book">
+<h1>Never Fight or Argue Again</h1><h2>Pick up your copy at the book table tonight</h2>
+<form class="card" id="f">
+<div class="row"><span>Paperback</span><b id="price">$19.99</b></div>
+<p class="muted">Demo price, adjustable before the event.</p>
+<label>Your name</label><input id="n" required autocomplete="name">
+<label>Email (for your receipt)</label><input id="e" type="email" required autocomplete="email">
+<label>How many copies?</label><select id="q"></select>
+<div class="row"><span>Total</span><b id="tot"></b></div>
+<button id="b">Pay now (test)</button><p class="muted" id="err" style="color:#b3261e"></p>
+</form>
+<p class="muted">After you pay, show the receipt QR code at the book table to get your book.</p>
+</div>
+<script src="config.js"></script><script>
+let P=1999;const q=document.getElementById("q");for(let i=1;i<=10;i++)q.add(new Option(i,i));
+const upd=()=>{document.getElementById("price").textContent=money(P);document.getElementById("tot").textContent=money(P*q.value)};upd();q.onchange=upd;
+api("book-sale-checkout").then(([s,d])=>{if(d.price_cents){P=d.price_cents;upd()}}).catch(()=>{});
+document.getElementById("f").onsubmit=async ev=>{ev.preventDefault();const b=document.getElementById("b");b.disabled=true;b.textContent="Processing...";
+try{const[s,d]=await post("book-sale-checkout",{name:n.value,email:e.value,quantity:+q.value});
+if(d.token){location.href="receipt.html?t="+encodeURIComponent(d.token)}else{err.textContent=d.error||"Something went wrong.";b.disabled=false;b.textContent="Pay now (test)"}}
+catch(x){err.textContent="Network problem. Please try again.";b.disabled=false;b.textContent="Pay now (test)"}};
+</script></body></html>

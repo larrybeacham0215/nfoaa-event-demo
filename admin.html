@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin | NFOAA Book Sales</title><link rel="stylesheet" href="style.css"></head><body>
+<div class="test">TEST MODE - admin</div><div class="wrap" style="max-width:900px"><h1>Book Sales</h1>
+<div class="card" id="login"><label>Staff PIN</label><input id="pin" type="password" inputmode="numeric"><button id="lb">Open</button></div>
+<div id="out"></div></div>
+<script src="config.js"></script><script>
+async function load(){const p=pin.value||sessionStorage.getItem("p");const[s,d]=await post("book-sale-redeem",{pin:p,action:"admin"});
+if(s!=200){out.innerHTML='<p class="muted">Wrong PIN.</p>';return}sessionStorage.setItem("p",p);login.style.display="none";const t=d.totals;
+let h=`<div class="card"><div class="row"><span>Paid orders</span><b>${t.paid_orders}</b></div><div class="row"><span>Books sold</span><b>${t.books_sold}</b></div><div class="row"><span>Revenue (test)</span><b>${money(t.revenue_cents)}</b></div><div class="row"><span>Books handed out</span><b>${t.books_redeemed}</b></div><div class="row"><span>Books still owed</span><b>${t.books_outstanding}</b></div><button class="alt" onclick="load()">Refresh</button></div>
+<div class="card" style="overflow-x:auto"><table><tr><th>Receipt</th><th>Name</th><th>Email</th><th>Qty</th><th>Given</th><th>Amount</th><th>Status</th><th>Paid</th></tr>`;
+d.orders.forEach(o=>h+=`<tr><td>${o.receipt_no}</td><td class="x"></td><td class="y"></td><td>${o.quantity}</td><td>${o.redeemed_qty}</td><td>${money(o.amount_cents)}</td><td>${o.status}</td><td>${when(o.paid_at)}</td></tr>`);
+out.innerHTML=h+"</table></div>";out.querySelectorAll("td.x").forEach((e,i)=>e.textContent=d.orders[i].buyer_name);out.querySelectorAll("td.y").forEach((e,i)=>e.textContent=d.orders[i].buyer_email)}
+lb.onclick=load;if(sessionStorage.getItem("p"))load();
+</script></body></html>

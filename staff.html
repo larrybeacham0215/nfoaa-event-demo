@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Staff Redeem | NFOAA</title><link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script></head><body>
+<div class="test">TEST MODE - staff book pickup</div>
+<div class="wrap"><h1>Book Pickup</h1>
+<div class="card" id="login"><label>Your name</label><input id="sn"><label>Staff PIN</label><input id="pin" type="password" inputmode="numeric"><button id="lb">Start</button><p class="muted" id="le" style="color:#b3261e"></p></div>
+<div id="app" style="display:none">
+<div class="card"><div id="reader"></div><button class="alt" id="scanb">Scan receipt QR</button>
+<label>Or type receipt number</label><input id="rn" placeholder="NF-ABC123" autocapitalize="characters"><button id="rb">Look up</button></div>
+<div id="res"></div><p class="muted"><a href="admin.html">Admin list</a></p></div></div>
+<script src="config.js"></script><script>
+let PIN="",STAFF="",cur=null,scanner=null;
+lb.onclick=async()=>{const[s,d]=await post("book-sale-redeem",{pin:pin.value,action:"login"});if(s==200){PIN=pin.value;STAFF=sn.value||"Staff";sessionStorage.setItem("p",PIN);sessionStorage.setItem("s",STAFF);login.style.display="none";app.style.display="block"}else le.textContent="Wrong PIN."};
+if(sessionStorage.getItem("p")){pin.value=sessionStorage.getItem("p");sn.value=sessionStorage.getItem("s");lb.click()}
+function show(d){const r=document.getElementById("res");cur=d;const o=d.order;
+if(d.verdict=="INVALID"){r.innerHTML='<div class="big bad">INVALID</div><p class="muted" style="text-align:center">Not a paid receipt. Do not hand out a book.</p>';return}
+const left=o.quantity-o.redeemed_qty,last=d.redemptions[d.redemptions.length-1];
+let h=d.verdict=="VALID"?'<div class="big ok">VALID</div>':'<div class="big bad">ALREADY REDEEMED</div>';
+h+=`<div class="card"><div class="row"><span>Receipt</span><b>${o.receipt_no}</b></div><div class="row"><span>Name</span><b id="bn"></b></div><div class="row"><span>Books paid</span><b>${o.quantity}</b></div><div class="row"><span>Already given</span><b>${o.redeemed_qty}</b></div><div class="row"><span>Still to give</span><b>${left}</b></div>`;
+d.redemptions.forEach(x=>h+=`<div class="muted">Gave ${x.qty} at ${when(x.created_at)} by <span class="sf"></span></div>`);
+if(left>0){h+=`<label>Books handing out now</label><select id="hq">${[...Array(left)].map((_,i)=>`<option ${i==left-1?'selected':''}>${i+1}</option>`).join("")}</select><button id="mr">Mark redeemed</button>`}
+r.innerHTML=h+"</div>";document.getElementById("bn").textContent=o.buyer_name;r.querySelectorAll(".sf").forEach((e,i)=>e.textContent=d.redemptions[i].staff_name);
+const mr=document.getElementById("mr");if(mr)mr.onclick=async()=>{mr.disabled=true;const[s,x]=await post("book-sale-redeem",{pin:PIN,action:"redeem",staff:STAFF,qty:+hq.value,...cur.key});x.key=cur.key;show(x);if(x.ok&&x.verdict!="INVALID")r.insertAdjacentHTML("afterbegin",'<p style="text-align:center;font:bold 18px system-ui;color:#1e8e3e">Recorded. Hand over the book(s).</p>')};
+r.scrollIntoView({behavior:"smooth"})}
+async function look(key){res.innerHTML='<p class="muted">Checking...</p>';const[s,d]=await post("book-sale-redeem",{pin:PIN,action:"lookup",...key});d.key=key;show(d)}
+rb.onclick=()=>rn.value.trim()&&look({receipt_no:rn.value});
+scanb.onclick=()=>{if(scanner){scanner.stop().catch(()=>{});scanner=null;scanb.textContent="Scan receipt QR";return}
+scanner=new Html5Qrcode("reader");scanb.textContent="Stop camera";
+scanner.start({facingMode:"environment"},{fps:10,qrbox:230},txt=>{scanner.stop().catch(()=>{});scanner=null;scanb.textContent="Scan receipt QR";
+const m=txt.match(/^NFOAA:(.+)$/)||txt.match(/[?&]t=([^&]+)/);look(m?{token:decodeURIComponent(m[1])}:{token:txt})}).catch(e=>{res.innerHTML='<p class="muted">Camera blocked. Allow camera access, or type the receipt number.</p>';scanner=null;scanb.textContent="Scan receipt QR"})};
+</script></body></html>
